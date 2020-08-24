@@ -75,6 +75,10 @@ class TwoLayerNet(object):
     # shape (N, C).                                                             #
     #############################################################################
     pass
+    X1 = np.dot(X, W1) + b1   # X1 - (N, H)
+    H = np.maximum(0, X1)     #ReLU
+    scores = np.dot(H, W2) + b2  # out - (N, C)
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -93,6 +97,10 @@ class TwoLayerNet(object):
     # regularization loss by 0.5                                                #
     #############################################################################
     pass
+    f = scores - np.max(scores, axis = 1, keepdims = True)
+    softmax = np.exp(f) / np.sum(np.exp(f), axis = 1, keepdims = True)
+    loss = np.sum(-np.log(softmax[np.arange(N), y]))
+    loss = loss / N + 0.5 * reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -105,6 +113,28 @@ class TwoLayerNet(object):
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
     pass
+    dW1 = np.zeros_like(W1.shape) # (D, H)
+    db1 = np.zeros_like(b1.shape)
+    dW2 = np.zeros_like(W2.shape)
+    db2 = np.zeros_like(b2.shape)
+
+    softmax[np.arange(N), y] -= 1
+    df = softmax / N
+    dW2 = np.dot(H.T, df)       # (H, C)
+    db2 = np.sum(df, axis = 0)  # (C, )
+
+    dH = np.dot(df, W2.T)       # (N, H)
+    margin = H                  
+    margin[margin > 0] = 1      
+    dX1 = margin * dH           # (N, H)
+    dW1 = np.dot(X.T, dX1)      # (D, H)
+    db1 = np.sum(dX1, axis = 0) # (H, )
+
+    dW1 += reg * W1
+    dW2 += reg * W2
+
+    grads = {'W1':dW1, 'b1':db1, 'W2':dW2, 'b2':db2}
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -149,6 +179,9 @@ class TwoLayerNet(object):
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
       pass
+      index = np.random.choice(num_train, size = batch_size)
+      X_batch = X[index]
+      y_batch = y[index]
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -164,6 +197,8 @@ class TwoLayerNet(object):
       # stored in the grads dictionary defined above.                         #
       #########################################################################
       pass
+      for key in self.params:
+        self.params[key] -= learning_rate * grads[key]
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -209,6 +244,7 @@ class TwoLayerNet(object):
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
     pass
+    y_pred = np.argmax(self.loss(X), axis = 1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################
